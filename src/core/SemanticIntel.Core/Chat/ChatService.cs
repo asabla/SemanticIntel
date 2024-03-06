@@ -25,21 +25,23 @@ public sealed class ChatService(
 
         chat.AddUserMessage(embeddingQuestion);
 
-        var reformulatedQuestion = await chatCompletionService.GetChatMessageContentAsync(chat)!;
+        var result = chatCompletionService.GetStreamingChatMessageContentsAsync(
+                chatHistory: chat);
 
-        if (string.IsNullOrWhiteSpace(reformulatedQuestion.InnerContent?.ToString()) is true)
+        logger.LogTrace("Start reformulating question for conversation {ConversationId}", conversationId);
+
+        string reformulatedQuestion = string.Empty;
+        await foreach (var message in result)
         {
-            logger.LogWarning("The reformulated question is empty.");
-            return string.Empty;
+            reformulatedQuestion += message.Content;
         }
-        else
-        {
-            chat.AddAssistantMessage(reformulatedQuestion.InnerContent.ToString() ?? string.Empty);
 
-            await UpdateCacheAsync(conversationId, chat);
+        logger.LogTrace("Reformulated question for conversation {ConversationId}: {ReformulatedQuestion}", conversationId, reformulatedQuestion);
 
-            return reformulatedQuestion.InnerContent.ToString() ?? string.Empty;
-        }
+        chat.AddAssistantMessage(reformulatedQuestion);
+        await UpdateCacheAsync(conversationId, chat);
+
+        return reformulatedQuestion;
     }
 
     public async Task AddInteractionAsync(

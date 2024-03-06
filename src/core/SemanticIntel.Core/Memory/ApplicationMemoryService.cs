@@ -7,20 +7,30 @@ using SemanticIntel.Core.Memory.Extensions;
 
 namespace SemanticIntel.Core.Memory;
 
-public class ApplicationMemory(
-    ILogger<ApplicationMemory> logger,
+public class ApplicationMemoryService(
+    ILogger<ApplicationMemoryService> logger,
     IKernelMemory kernelMemory,
     ChatService chatService)
 {
     public async Task<string> ImportAsync(
-        Stream content,
+        Stream streamContent,
         string? fileName = null,
         string? documentId = null,
         IEnumerable<UploadTag>? tags = null,
         string? index = null)
     {
+        logger.LogDebug(
+            message: "Importing document {FileName} with documentId {DocumentId}.",
+            args: [fileName, documentId]);
+
+        logger.LogDebug(
+            message: "File size: {FileSize}.",
+            args: streamContent.Length);
+
+        streamContent.Position = 0;
+
         documentId = await kernelMemory.ImportDocumentAsync(
-            content: content,
+            content: streamContent,
             fileName: fileName,
             documentId: documentId,
             tags: tags.ToTagCollection(),
@@ -76,6 +86,9 @@ public class ApplicationMemory(
             message: "Reformulated question: {ReformulatedQuestion}.", 
             args: reformulatedQuestion);
 
+        // TODO: save the reformulated question in the chat memory based on the conversationId
+        // and passed boolean flag
+
         // Ask using the embedding search via Kernel Memory and the reformulated question.
         // If tags are provided, use them as filters with OR logic.
         var answer = await kernelMemory.AskAsync(
@@ -96,7 +109,7 @@ public class ApplicationMemory(
             logger.LogTrace(
                 message: "Answer found for question {Question}.",
                 args: question.Text);
-            logger.LogDebug(
+            logger.LogTrace(
                 message: "Answer: {Answer}.",
                 args: answer.Result);
 
@@ -104,6 +117,10 @@ public class ApplicationMemory(
                 conversationId: question.ConversationId,
                 question: question.Text,
                 answer: answer.Result);
+
+            logger.LogDebug(
+                message: "Question proccsed and answer was added to conversation {ConversationId}.",
+                args: question.ConversationId);
 
             return new MemoryResponse(
                 Answer: answer.Result,
