@@ -11,19 +11,19 @@ public sealed class CrawlerService(ILogger<CrawlerService> logger)
     : IHostedService
 {
     // ------------ TODO: Move into configuration model ------------
-    int slowMo = 20;
-    int taskTimeout = 50;
-    int waitIntervalInSeconds = 5;
-    int requestTimeout = 12000;
-    int maxDegreeOfParallelism = 8;
+    readonly int slowMo = 20;
+    readonly int taskTimeout = 50;
+    readonly int waitIntervalInSeconds = 5;
+    readonly int requestTimeout = 12000;
+    readonly int maxDegreeOfParallelism = 8;
     // ------------ TODO: Move into configuration model ------------
 
     private IPlaywright? playwright;
     private IBrowserContext? browserContext;
 
-    private ConcurrentDictionary<string, bool> visistedUrls = new();
-    private ConcurrentQueue<string> urlsToVisit = new();
-    private List<string> allowedDomains = new();
+    private readonly ConcurrentDictionary<string, bool> visistedUrls = new();
+    private readonly ConcurrentQueue<string> urlsToVisit = new();
+    private readonly List<string> allowedDomains = new();
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -56,7 +56,7 @@ public sealed class CrawlerService(ILogger<CrawlerService> logger)
                         // var page = await browser.NewPageAsync();
                         var page = await browserContext.NewPageAsync();
                         currentUrl = await NavigateAndCheckIfVisistedAsync(
-                                page: page, 
+                                page: page,
                                 currentUrl: currentUrl);
 
                         if (IsAllowedUrl(currentUrl) is false || string.IsNullOrWhiteSpace(currentUrl))

@@ -2,8 +2,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory;
 
 using SemanticIntel.Core.Chat;
-using SemanticIntel.Core.Memory.Models;
 using SemanticIntel.Core.Memory.Extensions;
+using SemanticIntel.Core.Memory.Models;
 
 namespace SemanticIntel.Core.Memory;
 
@@ -74,7 +74,7 @@ public class ApplicationMemoryService(
         string? index = null)
     {
         logger.LogDebug(
-            message: "Asking question {Question} with minimum relevance {MinimumRelevance}.", 
+            message: "Asking question {Question} with minimum relevance {MinimumRelevance}.",
             args: [question.Text, minimumRelevance]);
 
         // Reformulate the following question taking into account the context of the chat ot perform keyword search and embeddings
@@ -83,7 +83,7 @@ public class ApplicationMemoryService(
             question: question.Text);
 
         logger.LogDebug(
-            message: "Reformulated question: {ReformulatedQuestion}.", 
+            message: "Reformulated question: {ReformulatedQuestion}.",
             args: reformulatedQuestion);
 
         // TODO: save the reformulated question in the chat memory based on the conversationId

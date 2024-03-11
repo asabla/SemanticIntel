@@ -11,8 +11,8 @@ namespace SemanticIntel.Services.Api.Extensions;
 
 // ---------- SemanticKernelOptions ----------
 public record DeploymentOptions(
-    string Endpoint, 
-    string Deployment, 
+    string Endpoint,
+    string Deployment,
     int MaxRetries = 3);
 
 public record QdrantOptions(

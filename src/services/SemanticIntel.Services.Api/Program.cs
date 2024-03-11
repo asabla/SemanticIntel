@@ -1,9 +1,10 @@
-using SemanticIntel.Services.Api.Extensions;
 using SemanticIntel.Services.Api.Endpoints;
+using SemanticIntel.Services.Api.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.AddSemanticKernelServices(
+builder
+    .AddSemanticKernelServices(
         new SemanticKernelOptions(
             EmbeddingOptions: new DeploymentOptions(
                 Endpoint: builder.Configuration["SemanticKernel:Embedding:Endpoint"] ?? string.Empty,
