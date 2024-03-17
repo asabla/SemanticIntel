@@ -92,4 +92,36 @@ internal static class SemanticKernelServiceExtensions
                 OverlappingTokens = options.CustomTextPartitionOptions.OverlappingTokens
             })
             .Build();
+
+    // TODO: Remove this method and document it in readme or wiki
+    // Used for debugging purposes, and to bypass SSL validation
+    // if it occurs again for OpenAI services
+    // private static IKernelBuilder AddCustomAzureOpenAIChatCompletion(
+    //         this IKernelBuilder builder,
+    //         string deploymentName,
+    //         string endpoint,
+    //         Azure.Core.TokenCredential credential)
+    // {
+    //     var handler = new HttpClientHandler
+    //     {
+    //         ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
+    //         {
+    //             Console.WriteLine("SSL Validation CallBack");
+    //             Console.WriteLine($"URL: {request.RequestUri?.ToString()}");
+    //             Console.WriteLine($"ERROR: {errors}");
+    //
+    //             return true;
+    //         }
+    //     };
+    //
+    //     var httpClient = new HttpClient(handler);
+    //
+    //     builder.AddAzureOpenAIChatCompletion(
+    //         deploymentName: deploymentName,
+    //         endpoint: endpoint,
+    //         credentials: credential,
+    //         httpClient: httpClient);
+    //
+    //     return builder;
+    // }
 }
