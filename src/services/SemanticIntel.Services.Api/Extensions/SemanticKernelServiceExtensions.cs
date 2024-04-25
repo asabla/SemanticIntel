@@ -13,6 +13,7 @@ namespace SemanticIntel.Services.Api.Extensions;
 public record DeploymentOptions(
     string Endpoint,
     string Deployment,
+    string? ApiKey = null,
     int MaxRetries = 3);
 
 public record QdrantOptions(
@@ -45,11 +46,22 @@ internal static class SemanticKernelServiceExtensions
 
         builder.Services.AddSingleton<IKernelMemory>(kernelMemory);
 
-        var kernelBuilder = builder.Services.AddKernel()
-            .AddAzureOpenAIChatCompletion(
-                deploymentName: options.ChatCompletionOptions.Deployment,
-                endpoint: options.ChatCompletionOptions.Endpoint,
-                credentials: new DefaultAzureCredential());
+        if (string.IsNullOrWhiteSpace(options.ChatCompletionOptions.ApiKey))
+        {
+            builder.Services.AddKernel()
+                .AddAzureOpenAIChatCompletion(
+                    deploymentName: options.ChatCompletionOptions.Deployment,
+                    endpoint: options.ChatCompletionOptions.Endpoint,
+                    credentials: new DefaultAzureCredential());
+        }
+        else
+        {
+            builder.Services.AddKernel()
+                .AddAzureOpenAIChatCompletion(
+                    deploymentName: options.ChatCompletionOptions.Deployment,
+                    endpoint: options.ChatCompletionOptions.Endpoint,
+                    apiKey: options.ChatCompletionOptions.ApiKey);
+        }
 
         builder.Services.AddScoped<ChatService>();
         builder.Services.AddScoped<ApplicationMemoryService>();
@@ -63,16 +75,27 @@ internal static class SemanticKernelServiceExtensions
         => new KernelMemoryBuilder(services)
             .WithAzureOpenAITextEmbeddingGeneration(new()
             {
-                Auth = AzureOpenAIConfig.AuthTypes.AzureIdentity,
+                Auth = options.EmbeddingOptions.ApiKey is null
+                    ? AzureOpenAIConfig.AuthTypes.AzureIdentity
+                    : AzureOpenAIConfig.AuthTypes.APIKey,
                 Deployment = options.EmbeddingOptions.Deployment,
                 Endpoint = options.EmbeddingOptions.Endpoint,
+                APIKey = options.EmbeddingOptions.ApiKey is null
+                    ? string.Empty
+                    : options.EmbeddingOptions.ApiKey,
                 MaxRetries = options.EmbeddingOptions.MaxRetries,
             })
             .WithAzureOpenAITextGeneration(new()
             {
-                Auth = AzureOpenAIConfig.AuthTypes.AzureIdentity,
+                // Auth = AzureOpenAIConfig.AuthTypes.AzureIdentity,
+                Auth = options.TextGenerationOptions.ApiKey is null
+                    ? AzureOpenAIConfig.AuthTypes.AzureIdentity
+                    : AzureOpenAIConfig.AuthTypes.APIKey,
                 Deployment = options.TextGenerationOptions.Deployment,
                 Endpoint = options.TextGenerationOptions.Endpoint,
+                APIKey = options.TextGenerationOptions.ApiKey is null
+                    ? string.Empty
+                    : options.TextGenerationOptions.ApiKey,
                 MaxRetries = options.TextGenerationOptions.MaxRetries,
             })
             .WithQdrantMemoryDb(new()
