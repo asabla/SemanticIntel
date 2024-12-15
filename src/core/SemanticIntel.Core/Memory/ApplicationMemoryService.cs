@@ -104,33 +104,33 @@ public class ApplicationMemoryService(
         //     filter: question.Tags.ToMemoryFilter(),
         //     minRelevance: minimumRelevance);
 
-        if (answer.NoResult == false)
+        if (answer.NoResult)
         {
-            logger.LogTrace(
-                message: "Answer found for question {Question}.",
-                args: question.Text);
-            logger.LogTrace(
-                message: "Answer: {Answer}.",
-                args: answer.Result);
-
-            await chatService.AddInteractionAsync(
-                conversationId: question.ConversationId,
-                question: question.Text,
-                answer: answer.Result);
-
             logger.LogDebug(
-                message: "Question proccsed and answer was added to conversation {ConversationId}.",
-                args: question.ConversationId);
+                message: "No answer found for question {Question}.",
+                args: question.Text);
 
-            return new MemoryResponse(
-                Answer: answer.Result,
-                Tags: answer.RelevantSources);
+            return null;
         }
 
-        logger.LogDebug(
-            message: "No answer found fo question {Question}.",
+        logger.LogTrace(
+            message: "Answer found for question {Question}.",
             args: question.Text);
+        logger.LogTrace(
+            message: "Answer: {Answer}.",
+            args: answer.Result);
 
-        return null;
+        await chatService.AddInteractionAsync(
+            conversationId: question.ConversationId,
+            question: question.Text,
+            answer: answer.Result);
+
+        logger.LogDebug(
+            message: "Question proccsed and answer was added to conversation {ConversationId}.",
+            args: question.ConversationId);
+
+        return new MemoryResponse(
+            Answer: answer.Result,
+            Tags: answer.RelevantSources);
     }
 }

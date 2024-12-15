@@ -1,7 +1,5 @@
-using Azure.Identity;
-
 using Microsoft.KernelMemory;
-using Microsoft.KernelMemory.Configuration;
+using Microsoft.KernelMemory.AI.Ollama;
 using Microsoft.SemanticKernel;
 
 using SemanticIntel.Core.Chat;
@@ -40,67 +38,20 @@ internal static class SemanticKernelServiceExtensions
     {
         builder.Services.AddMemoryCache();
 
-        var kernelMemory = SetupKernelMemory(
-            services: builder.Services,
-            options: options);
-
-        builder.Services.AddSingleton<IKernelMemory>(kernelMemory);
-
-        if (string.IsNullOrWhiteSpace(options.ChatCompletionOptions.ApiKey))
+        // read more here: https://github.com/microsoft/kernel-memory
+        var config = new OllamaConfig
         {
-            builder.Services.AddKernel()
-                .AddAzureOpenAIChatCompletion(
-                    deploymentName: options.ChatCompletionOptions.Deployment,
-                    endpoint: options.ChatCompletionOptions.Endpoint,
-                    credentials: new DefaultAzureCredential());
-        }
-        else
-        {
-            builder.Services.AddKernel()
-                .AddAzureOpenAIChatCompletion(
-                    deploymentName: options.ChatCompletionOptions.Deployment,
-                    endpoint: options.ChatCompletionOptions.Endpoint,
-                    apiKey: options.ChatCompletionOptions.ApiKey);
-        }
+            Endpoint = "http://localhost:11434",
+            TextModel = new OllamaModelConfig("qwen2.5:7b", 8000),
+            EmbeddingModel = new OllamaModelConfig("mxbai-embed-large:latest", 2048),
+        };
 
-        builder.Services.AddScoped<ChatService>();
-        builder.Services.AddScoped<ApplicationMemoryService>();
-
-        return builder;
-    }
-
-    private static IKernelMemory SetupKernelMemory(
-            IServiceCollection services,
-            SemanticKernelOptions options)
-        => new KernelMemoryBuilder(services)
-            .WithAzureOpenAITextEmbeddingGeneration(new()
-            {
-                Auth = options.EmbeddingOptions.ApiKey is null
-                    ? AzureOpenAIConfig.AuthTypes.AzureIdentity
-                    : AzureOpenAIConfig.AuthTypes.APIKey,
-                Deployment = options.EmbeddingOptions.Deployment,
-                Endpoint = options.EmbeddingOptions.Endpoint,
-                APIKey = options.EmbeddingOptions.ApiKey is null
-                    ? string.Empty
-                    : options.EmbeddingOptions.ApiKey,
-                MaxRetries = options.EmbeddingOptions.MaxRetries,
-            })
-            .WithAzureOpenAITextGeneration(new()
-            {
-                // Auth = AzureOpenAIConfig.AuthTypes.AzureIdentity,
-                Auth = options.TextGenerationOptions.ApiKey is null
-                    ? AzureOpenAIConfig.AuthTypes.AzureIdentity
-                    : AzureOpenAIConfig.AuthTypes.APIKey,
-                Deployment = options.TextGenerationOptions.Deployment,
-                Endpoint = options.TextGenerationOptions.Endpoint,
-                APIKey = options.TextGenerationOptions.ApiKey is null
-                    ? string.Empty
-                    : options.TextGenerationOptions.ApiKey,
-                MaxRetries = options.TextGenerationOptions.MaxRetries,
-            })
+        var kernelMemory = new KernelMemoryBuilder()
+            .WithOllamaTextGeneration(config)
+            .WithOllamaTextEmbeddingGeneration(config)
             .WithQdrantMemoryDb(new()
             {
-                Endpoint = options.QdrantOptions.Endpoint
+                Endpoint = "http://localhost:6333"
             })
             .WithSearchClientConfig(new()
             {
@@ -108,11 +59,25 @@ internal static class SemanticKernelServiceExtensions
                 MaxMatchesCount = 5,
                 AnswerTokens = 800
             })
-            .WithCustomTextPartitioningOptions(new TextPartitioningOptions
+            .WithCustomTextPartitioningOptions(new()
             {
                 MaxTokensPerParagraph = options.CustomTextPartitionOptions.MaxTokensPerParagraph,
                 MaxTokensPerLine = options.CustomTextPartitionOptions.MaxTokenPerLine,
                 OverlappingTokens = options.CustomTextPartitionOptions.OverlappingTokens
             })
             .Build();
+
+#pragma warning disable SKEXP0070 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        builder.Services.AddKernel()
+            .AddOllamaChatCompletion(
+                modelId: config.TextModel.ModelName,
+                endpoint: new Uri(config.Endpoint));
+#pragma warning restore SKEXP0070 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+
+        builder.Services.AddSingleton<IKernelMemory>(kernelMemory);
+        builder.Services.AddScoped<ChatService>();
+        builder.Services.AddScoped<ApplicationMemoryService>();
+
+        return builder;
+    }
 }
